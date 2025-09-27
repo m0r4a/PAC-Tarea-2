@@ -1,3 +1,9 @@
 # Escáner híbrido de puertos y sniffing en C++ con informe JSON
 
-Fue mala idea xd
+## TODOs:
+
+1. Quizas hacer que el request se haga solo, por ahora hago un `curl http://localhost:80 -4` y funciona la captura pero se puede mejorar
+2. Imprementar UDP
+3. Modularizar el código
+
+Falta hacer lo de json, parámetros y así pero prefiero ir trabajandolo poco a poco
