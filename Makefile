@@ -1,5 +1,5 @@
 CXX := g++
-CXXSTD   := c++11
+CXXSTD   := c++23
 CXXFLAGS := -std=$(CXXSTD) -Wall -Wextra -O2 -Isrc/include
 LDFLAGS  := -lpcap
 SRCS := src/main.cpp src/escaneo.cpp src/sniffer.cpp

@@ -6,3 +6,11 @@
 2. Imprementar UDP
 
 Falta hacer lo de json, parámetros y así pero prefiero ir trabajandolo poco a poco
+
+## Notas
+
+Mandar un paquete UDP por el puerto 53 a el DNS de Google
+
+```bash
+dig @8.8.8.8 google.com
+```
