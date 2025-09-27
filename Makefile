@@ -3,7 +3,7 @@ CXXSTD   := c++11
 CXXFLAGS := -std=$(CXXSTD) -Wall -Wextra -O2 -Isrc/include
 LDFLAGS  := -lpcap
 SRCS := src/main.cpp src/escaneo.cpp src/sniffer.cpp
-OUT  := main
+OUT  := dev_bin
 
 .PHONY: all clean run
 
