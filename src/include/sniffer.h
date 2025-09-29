@@ -7,7 +7,8 @@
 class Sniffer {
 public:
     Sniffer(const std::string& interface, const std::string& ip, int port);
-    void start();
+    void startTCP();
+    // void startUDP(); esto es para al rato
 
 private:
     void print_header_bytes(const u_char* data, int size);

@@ -11,7 +11,7 @@ void Sniffer::print_header_bytes(const u_char* data, int size) {
     printf("\n");
 }
 
-void Sniffer::start() {
+void Sniffer::startTCP() {
     std::cout << "\nStarting the sniffing on " << interface << std::endl;
 
     char errbuf[PCAP_ERRBUF_SIZE];

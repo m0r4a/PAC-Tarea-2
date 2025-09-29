@@ -11,7 +11,7 @@ int main() {
 
     if (scanner.scanTCP()) {
         Sniffer sniffer(INTERFACE, TARGET_IP, TARGET_PORT);
-        sniffer.start();
+        sniffer.startTCP();
     }
 
     return 0;
