@@ -7,6 +7,7 @@ class Scanner {
 public:
     Scanner(const std::string& ip, int port);
     bool scanTCP();
+    bool scanUDP();
 
 private:
     std::string target_ip;
