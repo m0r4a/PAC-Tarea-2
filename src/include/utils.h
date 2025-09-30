@@ -15,7 +15,7 @@ static std::map<int, std::string> TCP_SERVICE_MAP = {
 };
 
 static std::map<int, std::string> UDP_SERVICE_MAP = {
-    {53, "domain"}, {67, "bootps"}, {68, "bootpc"}, {69, "tftp"}, 
+    {50, "test-port"},  {53, "domain"}, {67, "bootps"}, {68, "bootpc"}, {69, "tftp"}, 
     {123, "ntp"}, {135, "msrpc"}, {137, "netbios-ns"}, {138, "netbios-dgm"},
     {139, "netbios-ssn"}, {161, "snmp"}, {514, "syslog"}, {1900, "ssdp"}, 
     {5353, "mdns"}
