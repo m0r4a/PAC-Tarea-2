@@ -3,12 +3,12 @@
 
 #include <string>
 #include <pcap.h>
+#include "common.h"
 
 class Sniffer {
 public:
     Sniffer(const std::string& interface, const std::string& ip, int port);
-    void startTCP();
-    // void startUDP(); esto es para al rato
+    void start(Protocol protocol);
 
 private:
     void print_header_bytes(const u_char* data, int size);
