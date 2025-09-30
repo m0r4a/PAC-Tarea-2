@@ -2,7 +2,7 @@ CXX := g++
 CXXSTD   := c++23
 CXXFLAGS := -std=$(CXXSTD) -Wall -Wextra -O2 -Isrc/include
 LDFLAGS  := -lpcap -pthread
-SRCS := src/main.cpp src/escaneo.cpp src/sniffer.cpp
+SRCS := src/main.cpp src/escaneo.cpp src/sniffer.cpp src/args.cpp
 OUT  := dev_bin
 
 .PHONY: all clean run

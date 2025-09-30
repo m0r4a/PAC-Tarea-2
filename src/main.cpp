@@ -1,50 +1,92 @@
+#include "./include/args.h"
 #include "./include/escaneo.h"
 #include "./include/sniffer.h"
 #include "./include/common.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <vector>
+#include <queue>
+#include <mutex>
+#include <functional>
 
+std::queue<int> g_port_queue;
+std::mutex g_queue_mutex;
+std::mutex g_cout_mutex;
 
-// TCP example
-// const Protocol SCAN_PROTOCOL = Protocol::TCP;
-// const char* TARGET_IP = "127.0.0.1";
-// const int TARGET_PORT = 80;
-// const char* INTERFACE = "lo";
+void scan_worker(const AppConfig& config, Protocol protocol) {
+    while (true) {
+        int puerto;
 
-// UDP
-const Protocol SCAN_PROTOCOL = Protocol::UDP;
-const char* TARGET_IP = "127.0.0.1";
-const int TARGET_PORT = 1234;
-const char* INTERFACE = "lo";
+        {
+            std::lock_guard<std::mutex> lock(g_queue_mutex);
+            if (g_port_queue.empty()) {
+                return;
+            }
+            puerto = g_port_queue.front();
+            g_port_queue.pop();
+        }
 
-int main() {
-    Scanner scanner(TARGET_IP, TARGET_PORT);
-    Sniffer sniffer(INTERFACE, TARGET_IP, TARGET_PORT);
+        Scanner scanner(config.target_ip, puerto);
+        Sniffer sniffer(config.interface, config.target_ip, puerto);
 
-    std::atomic<bool> stop_sniffer(false);
+        std::atomic<bool> stop_sniffer(false);
+        std::thread sniffer_thread(&Sniffer::start, &sniffer, protocol, std::ref(stop_sniffer));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-    std::cout << "Starting sniffer in the background..." << std::endl;
-    std::thread sniffer_thread(&Sniffer::start, &sniffer, SCAN_PROTOCOL, std::ref(stop_sniffer));
+        if (protocol == Protocol::TCP) {
+            scanner.scanTCP();
+        } else {
+            scanner.scanUDP();
+        }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(config.timeout_ms));
+        stop_sniffer.store(true);
+        sniffer_thread.join();
+    }
+}
 
-    if (SCAN_PROTOCOL == Protocol::TCP) {
-        scanner.scanTCP();
-    } else {
-        scanner.scanUDP();
+int main(int argc, char* argv[]) {
+    AppConfig config = ArgsParser::parse(argc, argv);
+    if (config.show_help || !config.args_validos) {
+        return config.args_validos ? 0 : 1;
     }
 
-    // El hilo principal espera 2 segundos, el tiempo máximo para recibir una respuesta UDP
-    // porque si no cuando el puerto está abierto se queda esperando infinitamente
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    size_t num_threads = config.num_threads;
+    if (num_threads == 0) {
+        num_threads = std::thread::hardware_concurrency();
+        if (num_threads == 0) num_threads = 4;
+    }
 
-    stop_sniffer.store(true);
-    
-    // esperar a que el hilo termine de forma limpia
-    sniffer_thread.join();
+    std::cout << "Iniciando escaneo en " << config.target_ip << " sobre " << config.ports.size() << " puertos..." << std::endl;
+    std::cout << "Usando " << num_threads << " hilos" << std::endl;
 
-    std::cout << "\nScan and capture finished" << std::endl;
+    for (Protocol protocol : config.protocols_to_scan) {
+        const char* protocol_str = (protocol == Protocol::TCP) ? "TCP" : "UDP";
+        std::cout << "\nEscaneando puertos " << protocol_str << std::endl;
 
+        {
+            std::lock_guard<std::mutex> lock(g_queue_mutex);
+            for (int puerto : config.ports) {
+                g_port_queue.push(puerto);
+            }
+        }
+
+        std::vector<std::thread> workers;
+        for (size_t i = 0; i < num_threads; ++i) {
+            workers.emplace_back(scan_worker, std::cref(config), protocol);
+        }
+
+        for (auto& worker : workers) {
+            worker.join();
+        }
+    }
+
+    if (!config.output_file.empty()) {
+        std::cout << "\nGenerando reporte en: " << config.output_file << "..." << std::endl;
+        // aqui va la lógica para generar el JSON
+    }
+
+    std::cout << "\nEscaneo completo" << std::endl;
     return 0;
 }
