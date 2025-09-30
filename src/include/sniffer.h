@@ -2,27 +2,33 @@
 #define SNIFFER_H
 
 #include <string>
+#include <vector>
 #include <pcap.h>
-#include <atomic>
+#include <future>
 #include "common.h"
+
+struct SnifferResult {
+    bool packet_found = false;
+    PortStatus status = PortStatus::UNKNOWN;
+    std::vector<unsigned char> header_bytes;
+};
 
 class Sniffer {
 public:
     Sniffer(const std::string& interface, const std::string& ip, int port);
+    ~Sniffer();
     
-    void start(Protocol protocol, std::atomic<bool>& stop_signal);
-
-private:
-    void print_header_bytes(const u_char* data, int size);
-    
-    // esto aparentemente es para procesar los paquetes en modo no bloqueante
-    static void packet_handler(u_char* user_data, const struct pcap_pkthdr* pkthdr, const u_char* packet);
+    void start(Protocol protocol, std::promise<SnifferResult> result_promise);
+    void stop();
     
     std::string interface;
     std::string target_ip;
     int target_port;
-    Protocol scan_protocol;
-    bool packet_found = false; // para saber si ya se capturó algo
+
+private:
+    static void packet_handler(u_char* user_data, const struct pcap_pkthdr* pkthdr, const u_char* packet);
+    
+    pcap_t* handle;
 };
 
 #endif

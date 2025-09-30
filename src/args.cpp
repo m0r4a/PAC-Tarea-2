@@ -46,7 +46,7 @@ void ArgsParser::imprimirUso(const char* prog) {
     std::cout << "Opciones de Salida y Rendimiento:\n";
     std::cout << "  -t N                    Número de hilos a usar (predeterminado: máximo posible)\n";
     std::cout << "  --timeout MS            Timeout en milisegundos (predeterminado: 2000)\n";
-    std::cout << "  --output ARCHIVO        Archivo de salida para el reporte JSON\n";
+    std::cout << "  -o, --output ARCHIVO    Archivo de salida para el reporte JSON\n";
     std::cout << "  -h, --help              Muestra esta ayuda\n";
 }
 
@@ -78,9 +78,14 @@ AppConfig ArgsParser::parse(int argc, char* argv[]) {
         }
         else if ((arg == "-p") && i + 1 < argc) {
             puertoInput = argv[++i];
-        } else if (arg.rfind("--timeout=", 0) == 0) {
+        }
+        else if (arg.rfind("--timeout=", 0) == 0) {
             try { config.timeout_ms = std::stoi(arg.substr(10)); } catch (...) {}
-        } else if ((arg == "--output") && i + 1 < argc) {
+        } 
+        else if ((arg == "--timeout") && i + 1 < argc) {
+            try { config.timeout_ms = std::stoi(argv[++i]); } catch (...) {}
+        } 
+        else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
             config.output_file = argv[++i];
         } else if ((arg == "-i") && i + 1 < argc) {
             config.interface = argv[++i];
