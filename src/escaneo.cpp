@@ -63,7 +63,7 @@ bool Scanner::scanUDP() {
 
     // Se envia un "datagrama" vacío para ver si responde
     char payload[] = "";
-    if (sendto(sock, payload, sizeof(payload), 0, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+    if (sendto(sock, payload, strlen(payload), 0, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         std::cerr << "Error sending UDP packet: " << strerror(errno) << std::endl;
         close(sock);
         return false;
