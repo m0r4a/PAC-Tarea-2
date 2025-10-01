@@ -14,5 +14,5 @@ clean:
 	@echo "Cleaning..."
 	-rm -f $(OUT)
 
-run:
-	sudo ./escaner
+test:
+	sudo ./$(OUT) 127.0.0.1 -p 1-500 -i lo -o test.json
