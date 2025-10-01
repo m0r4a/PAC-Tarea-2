@@ -162,3 +162,6 @@ sudo socat UDP-LISTEN:50,fork,reuseaddr EXEC:'echo hello'
 Output: `45 00 00 22 0d 62 40 00 40 11...`
 
 El offset correcto salta la capa de enlace (14 bytes para Ethernet, 4 para Loopback) y captura desde el header IP.
+
+> [!NOTE]
+> Nota final, tómese como documentación también todos los comentarios del código, me tomó como 3 horas.
