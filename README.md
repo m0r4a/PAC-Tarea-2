@@ -40,6 +40,8 @@ sudo ./escaner <IP> [opciones]
 - `-t, --threads <n>`: Número de hilos
 - `--timeout <ms>`: Timeout en milisegundos
 
+> No es el mejor diseño del mundo pero por defecto usa TCP
+
 **Ejemplos:**
 ```bash
 # Escaneo TCP básico

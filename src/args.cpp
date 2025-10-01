@@ -44,7 +44,7 @@ void ArgsParser::imprimirUso(const char* prog) {
     std::cout << "  -p PUERTOS                    Puertos a escanear (ej. 1-100, 22,80,443)\n";
     std::cout << "  -i, --interface INTERFAZ      Interfaz de red a usar (predeterminado: enp109s0)\n\n";
     std::cout << "Opciones de Salida y Rendimiento:\n";
-    std::cout << "  -t N                    Número de hilos a usar (predeterminado: máximo posible)\n";
+    std::cout << "  -t, --threads N               Número de hilos a usar (predeterminado: máximo posible)\n";
     std::cout << "  --timeout MS            Timeout en milisegundos (predeterminado: 2000)\n";
     std::cout << "  -o, --output ARCHIVO    Archivo de salida para el reporte JSON\n";
     std::cout << "  -h, --help              Muestra esta ayuda\n";
@@ -73,7 +73,7 @@ AppConfig ArgsParser::parse(int argc, char* argv[]) {
             config.protocols_to_scan.push_back(Protocol::UDP);
             protocol_explicitly_set = true;
         }
-        else if ((arg == "-t") && i + 1 < argc) {
+        else if ((arg == "-t" || arg == "--threads") && i + 1 < argc) {
             try { config.num_threads = std::max(1, std::stoi(argv[++i])); } catch (...) {}
         }
         else if ((arg == "-p") && i + 1 < argc) {
