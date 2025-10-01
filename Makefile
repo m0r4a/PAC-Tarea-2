@@ -3,7 +3,7 @@ CXXSTD   := c++23
 CXXFLAGS := -std=$(CXXSTD) -Wall -Wextra -O2 -Isrc/include
 LDFLAGS  := -lpcap -pthread
 SRCS := src/main.cpp src/escaneo.cpp src/sniffer.cpp src/args.cpp src/JSONGen.cpp
-OUT  := dev_bin
+OUT  := escaner
 
 .PHONY: all clean run
 
@@ -15,4 +15,4 @@ clean:
 	-rm -f $(OUT)
 
 run:
-	sudo ./main
+	sudo ./escaner
