@@ -1,89 +1,155 @@
 # Escáner híbrido de puertos y sniffing en C++ con informe JSON
 
-Me acabo de dar cuenta que está horriblemente hecho, tengo que refactorizar mucho de esto, el flujo era:
+## Descripción general
+Herramienta en C++ para Linux que combina escaneo real de puertos TCP/UDP y captura de la primera trama de respuesta. Al finalizar, genera un informe JSON con servicios y primeros bytes de cabecera.
 
-1. Mandar paquete -> Ver si el puerto estaba abierto -> Sniffear la respuesta
+## Requisitos
+- **Sistema operativo**: Linux (testeado en Arch Linux)
+- **Compilador**: g++ (C++23)
+- **Dependencias**: libpcap
 
-De hecho ahora que lo escribo no está tan mal, sí se puede hacer sólo me falta automatizar el envío del paquete y que el mismo escaneo llame a sniff después de enviar el paquete
-puede ser que no necesita tanta refactorización
-
-## TODOs:
-
-1. Quizas hacer que el request se haga solo, por ahora hago un `curl http://localhost:80 -4` y funciona la captura pero se puede mejorar
-
-Falta hacer lo de json, parámetros y así pero prefiero ir trabajandolo poco a poco
-
-## Notas
-
-Mandar un paquete UDP por el puerto 53 a el DNS de Google
-
+Instalación de dependencias:
 ```bash
-dig @8.8.8.8 google.com
+sudo apt-get install libpcap-dev
 ```
 
-comando para abrir un puerto UDP y que responda
-
+## Compilación
 ```bash
-sudo socat UDP-LISTEN:50,fork,reuseaddr EXEC:'echo hello'
+make
 ```
 
-## Known issues
+O manualmente:
+```bash
+g++ -std=c++23 -Wall -Wextra -O2 -Isrc/include \
+    src/main.cpp src/escaneo.cpp src/sniffer.cpp src/args.cpp src/JSONGen.cpp \
+    -o escaner -lpcap -pthread
+```
 
-Cuando hace un escaneo UDP por la interfaz ethernet a la IP propia dentro de la red el escaneo no sirve, supongo que es porque como el kernel detecta que es una IP propia usa la interfaz loopback y produce errores inesperados de falsos positivos.
+## Ejecución
+
+```bash
+sudo ./escaner <IP> [opciones]
+```
+
+**Opciones disponibles:**
+- `-p, --ports <rango>`: Puertos a escanear (ej: `20-80` o `22,80,443`)
+- `-t, --tcp`: Escanear TCP (activo por defecto)
+- `-u, --udp`: Escanear UDP
+- `-i, --interface <if>`: Interfaz de red (ej: `enp109s0`, `lo`)
+- `-o, --output <file>`: Archivo JSON de salida
+- `-T, --threads <n>`: Número de hilos
+- `--timeout <ms>`: Timeout en milisegundos
+
+**Ejemplos:**
+```bash
+# Escaneo TCP básico
+sudo ./escaner 192.168.1.100 -p 20-1024 -o resultado.json
+
+# Escaneo UDP en puerto DNS
+sudo ./escaner 8.8.8.8 -p 53 -u -i enp109s0
+
+# Escaneo local (importante usar interfaz lo)
+sudo ./escaner 127.0.0.1 -p 1-1000 -u -i lo
+```
+
+## Enfoque técnico
+
+**Escaneo TCP:**
+- Conexiones no bloqueantes con `select()`
+- Captura de flags TCP (SYN-ACK, RST) con libpcap
+- Prioriza resultado del sniffer sobre `connect()` para mayor precisión
+
+**Escaneo UDP:**
+- `sendto()` para envío de probes
+- Captura de respuestas UDP o mensajes ICMP Port Unreachable
+- Timeout 2x mayor que TCP por latencia de red
+
+**Sniffing:**
+- libpcap con filtro BPF para IP/puertos específicos
+- Captura del primer paquete de respuesta
+- Extracción de primeros 16 bytes del header IP
+
+**Concurrencia:**
+- Thread pool con patrón productor-consumidor
+- Sincronización con `std::mutex` y `std::promise/std::future`
+- `std::atomic` para prevenir race conditions en callbacks de pcap
+
+**JSON:**
+- `nlohmann/json` para serializar resultados
+
+## JSON generado
+```json
+[
+    {
+        "header_bytes": "45 00 00 22 0d 62 40 00 40 11 2f 67 7f 00 00 01",
+        "ip": "127.0.0.1",
+        "port": 50,
+        "protocol": "UDP",
+        "service": "test-port",
+        "status": "open"
+    }
+]
+```
+
+## Limitaciones conocidas
+
+### Escaneo local con interfaz física (UDP)
+
+Al escanear tu propia IP en una interfaz no-loopback, UDP siempre reporta `open|filtered`:
+
+```bash
+# No funciona bien
+sudo ./escaner 192.168.1.50 -p 50 -u -i enp109s0  # Si 192.168.1.50 es tu IP
+```
 
 <p align="center">
     <img src="resources/udp_ethint_falso_positivo.png" alt="UDP falso positivo"/>
 </p>
 
+**Causa**: El kernel Linux optimiza el tráfico local y no envía paquetes por la interfaz física. El sniffer nunca captura la respuesta porque los paquetes no pasan realmente por `enp109s0`.
 
-Sin embargo el escaneo SÍ funciona para interfaces ethernet, en este caso se testeó con una máquina virtual:
+**Solución**: Para escaneo local, **siempre usar interfaz loopback**:
+```bash
+sudo ./escaner 127.0.0.1 -p 50 -u -i lo
+```
 
-De forma manual se muesta que sí se recibe de verdad el paquete:
+Sin embargo el escaneo **SÍ funciona** para interfaces ethernet cuando escaneas otra máquina real. Ejemplo con una máquina virtual:
 
+De forma manual se muestra que sí se recibe el paquete:
 <p align="center">
     <img src="resources/udp_virbr0int_vm_manual.png" alt="UDP request manual"/>
 </p>
 
-
-Y un el escaneo exitoso:
-
+Y el escaneo exitoso:
 <p align="center">
     <img src="resources/udp_virbr0int_vm_escaneo_valido.png" alt="UDP escaneo válido"/>
 </p>
 
+**¿Por qué TCP sí funciona con auto-escaneo?**
 
-## Problemas
+TCP usa `connect()` como fallback cuando el sniffer no captura nada. El kernel internamente sabe si el puerto está abierto/cerrado sin necesidad de que los paquetes pasen por la interfaz física. UDP no tiene este fallback porque es stateless.
 
-### Condiciones de carrera
+## Notas de desarrollo
 
-### Headerbytes
+### Comandos útiles para testing
 
-Usando esto de respuesta
-
+Abrir un puerto UDP que responda:
 ```bash
 sudo socat UDP-LISTEN:50,fork,reuseaddr EXEC:'echo hello'
 ```
 
-Output: 00 00 00 00 00 00 00 00 00 00 00 00 08 00 45 00 00 22 45 31 40 00 40 11 
+Validar captura con tcpdump:
+```bash
+sudo tcpdump -i lo -n '(udp and src host 127.0.0.1 and src port 50) or (icmp and icmp[0] == 3 and icmp[1] == 3 and src host 127.0.0.1)'
+```
 
+### Header bytes
+
+Los primeros 16 bytes capturados corresponden al header IP de la respuesta. Ejemplo:
 
 ```bash
-sudo socat UDP-LISTEN:50,fork,reuseaddr EXEC:'echo babai'
+sudo socat UDP-LISTEN:50,fork,reuseaddr EXEC:'echo hello'
 ```
+Output: `45 00 00 22 0d 62 40 00 40 11...`
 
-Output: 00 00 00 00 00 00 00 00 00 00 00 00 08 00 45 00 00 22 fe 60 40 00 40 11
-
-El problema era que mis headerbytes se capturaban así:
-
-```
-[
-    {
-        "header_bytes": "00 00 00 00 00 00 00 00 00 00 00 00 08 00 45 00",
-        "ip": "127.0.0.1",
-        "port": 50,
-        "protocol": "UDP",
-        "service": "unknown",
-        "status": "open"
-    }
-]
-```
+El offset correcto salta la capa de enlace (14 bytes para Ethernet, 4 para Loopback) y captura desde el header IP.
