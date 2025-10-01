@@ -37,12 +37,12 @@ static std::vector<int> parsearPuertos(const std::string& input) {
 void ArgsParser::imprimirUso(const char* prog) {
     std::cout << "Uso: " << prog << " <objetivo> [opciones]\n\n";
     std::cout << "Argumentos:\n";
-    std::cout << "  objetivo                Dirección IP o nombre del host a escanear\n\n";
+    std::cout << "  objetivo                      Dirección IP o nombre del host a escanear\n\n";
     std::cout << "Opciones de Escaneo:\n";
-    std::cout << "  -u                      Realizar un escaneo UDP (el predeterminado es TCP)\n";
-    std::cout << "  -tu, -ut                Realizar escaneo TCP y UDP\n";
-    std::cout << "  -p PUERTOS              Puertos a escanear (ej. 1-100, 22,80,443)\n";
-    std::cout << "  -i INTERFAZ             Interfaz de red a usar (predeterminado: enp109s0)\n\n";
+    std::cout << "  -u, --udp                     Realizar un escaneo UDP (el predeterminado es TCP)\n";
+    std::cout << "  -tu, -ut                      Realizar escaneo TCP y UDP\n";
+    std::cout << "  -p PUERTOS                    Puertos a escanear (ej. 1-100, 22,80,443)\n";
+    std::cout << "  -i, --interface INTERFAZ      Interfaz de red a usar (predeterminado: enp109s0)\n\n";
     std::cout << "Opciones de Salida y Rendimiento:\n";
     std::cout << "  -t N                    Número de hilos a usar (predeterminado: máximo posible)\n";
     std::cout << "  --timeout MS            Timeout en milisegundos (predeterminado: 2000)\n";
@@ -65,7 +65,7 @@ AppConfig ArgsParser::parse(int argc, char* argv[]) {
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
         
-        if (arg == "-u") {
+        if (arg == "-u" || arg == "--udp") {
             config.protocols_to_scan.push_back(Protocol::UDP);
             protocol_explicitly_set = true;
         } else if (arg == "-tu" || arg == "-ut") {
@@ -87,7 +87,7 @@ AppConfig ArgsParser::parse(int argc, char* argv[]) {
         } 
         else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
             config.output_file = argv[++i];
-        } else if ((arg == "-i") && i + 1 < argc) {
+        } else if ((arg == "-i" || arg == "--interface") && i + 1 < argc) {
             config.interface = argv[++i];
         }
     }

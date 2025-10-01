@@ -33,11 +33,11 @@ sudo ./escaner <IP> [opciones]
 
 **Opciones disponibles:**
 - `-p, --ports <rango>`: Puertos a escanear (ej: `20-80` o `22,80,443`)
-- `-t, --tcp`: Escanear TCP (activo por defecto)
 - `-u, --udp`: Escanear UDP
+- `-tu, -ut`: Escanear TCP y UDP
 - `-i, --interface <if>`: Interfaz de red (ej: `enp109s0`, `lo`)
 - `-o, --output <file>`: Archivo JSON de salida
-- `-T, --threads <n>`: Número de hilos
+- `-t, --threads <n>`: Número de hilos
 - `--timeout <ms>`: Timeout en milisegundos
 
 **Ejemplos:**
