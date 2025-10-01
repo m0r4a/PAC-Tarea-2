@@ -54,6 +54,13 @@ sudo ./escaner 8.8.8.8 -p 53 -u -i enp109s0
 sudo ./escaner 127.0.0.1 -p 1-1000 -u -i lo
 ```
 
+**Test:**
+```bash
+make test
+```
+
+Alternativamente make viene con un pequeño test
+
 ## Enfoque técnico
 
 **Escaneo TCP:**
